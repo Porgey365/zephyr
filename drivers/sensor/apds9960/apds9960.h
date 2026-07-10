@@ -74,6 +74,8 @@
 /* Acceptable device IDs */
 #define APDS9960_ID_1			0xAB
 #define APDS9960_ID_2			0x9C
+/* Seen on a clone chip that is otherwise register-compatible. */
+#define APDS9960_ID_3			0x9F
 
 #define APDS9960_STATUS_REG		0x93
 #define APDS9960_STATUS_CPSAT		BIT(7)
