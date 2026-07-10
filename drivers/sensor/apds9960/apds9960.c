@@ -282,7 +282,8 @@ static int apds9960_sensor_setup(const struct device *dev)
 		return -EIO;
 	}
 
-	if (!((chip_id == APDS9960_ID_1) || (chip_id == APDS9960_ID_2))) {
+	if (!((chip_id == APDS9960_ID_1) || (chip_id == APDS9960_ID_2) ||
+	      (chip_id == APDS9960_ID_3))) {
 		LOG_ERR("Invalid chip id 0x%x", chip_id);
 		return -EIO;
 	}
