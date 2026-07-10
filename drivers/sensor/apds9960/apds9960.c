@@ -295,8 +295,17 @@ static int apds9960_sensor_setup(const struct device *dev)
 		return -EIO;
 	}
 
+	/*
+	 * Our clone chip's I2C slave logic needs a moment to settle after the
+	 * ENABLE write before it reliably acks the next transaction; without
+	 * this it silently NACKs the AICLEAR write below. Genuine chips don't
+	 * seem to need it, but the delay is harmless either way.
+	 */
+	k_sleep(K_MSEC(2));
+
 	if (i2c_reg_write_byte_dt(&config->i2c,
 			       APDS9960_AICLEAR_REG, 0)) {
+		LOG_ERR("AICLEAR register is not cleared");
 		return -EIO;
 	}
 
