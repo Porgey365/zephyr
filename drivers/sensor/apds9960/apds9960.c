@@ -109,7 +109,8 @@ static int apds9960_sample_fetch(const struct device *dev,
 
 	if (i2c_reg_write_byte_dt(&config->i2c,
 			       APDS9960_AICLEAR_REG, 0)) {
-		return -EIO;
+		LOG_WRN_ONCE("AICLEAR write not acked (clone chip quirk); "
+			     "readings still valid, ignoring");
 	}
 
 	return 0;
@@ -296,17 +297,16 @@ static int apds9960_sensor_setup(const struct device *dev)
 	}
 
 	/*
-	 * Our clone chip's I2C slave logic needs a moment to settle after the
-	 * ENABLE write before it reliably acks the next transaction; without
-	 * this it silently NACKs the AICLEAR write below. Genuine chips don't
-	 * seem to need it, but the delay is harmless either way.
+	 * Our clone chip hard-NACKs this write-only "clear interrupts" pulse
+	 * register consistently (confirmed: a settle delay after the previous
+	 * write didn't help), unlike genuine chips. It only clears potentially
+	 * stale interrupt flags, not essential to basic ALS operation, so
+	 * don't fail setup over it.
 	 */
-	k_sleep(K_MSEC(2));
-
 	if (i2c_reg_write_byte_dt(&config->i2c,
 			       APDS9960_AICLEAR_REG, 0)) {
-		LOG_ERR("AICLEAR register is not cleared");
-		return -EIO;
+		LOG_WRN_ONCE("AICLEAR write not acked (clone chip quirk); "
+			     "continuing without it");
 	}
 
 	/* Disable gesture interrupt */
@@ -434,10 +434,9 @@ static int apds9960_pm_action(const struct device *dev,
 			ret = -EIO;
 		}
 
-		if (i2c_reg_write_byte_dt(&config->i2c,
-				       APDS9960_AICLEAR_REG, 0)) {
-			ret = -EIO;
-		}
+		/* Clone chip hard-NACKs this write; see apds9960_sensor_setup. */
+		(void)i2c_reg_write_byte_dt(&config->i2c,
+				       APDS9960_AICLEAR_REG, 0);
 		break;
 	default:
 		return -ENOTSUP;
